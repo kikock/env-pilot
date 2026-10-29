@@ -319,3 +319,38 @@ fn string_to_reg_val(s: &str, vtype: RegType) -> RegValue {
     };
     RegValue { bytes, vtype }
 }
+
+/// 将快照中的环境变量集合恢复写入注册表
+pub fn restore_env_snapshot(payload: &EnvSnapshotPayload) -> AppResult<()> {
+    if !is_admin() && !payload.system.is_empty() {
+        return Err(AppError::permission_denied("恢复系统环境变量需要管理员权限"));
+    }
+
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+
+    if let Ok(key) = hklm.open_subkey_with_flags(SYS_ENV_KEY, KEY_WRITE) {
+        for v in &payload.system {
+            let reg_type = match v.kind {
+                ValueKind::ExpandSz => REG_EXPAND_SZ,
+                _ => REG_SZ,
+            };
+            let reg_val = string_to_reg_val(&v.value, reg_type);
+            let _ = key.set_raw_value(&v.name, &reg_val);
+        }
+    }
+
+    if let Ok(key) = hkcu.open_subkey_with_flags(USER_ENV_KEY, KEY_WRITE) {
+        for v in &payload.user {
+            let reg_type = match v.kind {
+                ValueKind::ExpandSz => REG_EXPAND_SZ,
+                _ => REG_SZ,
+            };
+            let reg_val = string_to_reg_val(&v.value, reg_type);
+            let _ = key.set_raw_value(&v.name, &reg_val);
+        }
+    }
+
+    broadcast_setting_change();
+    Ok(())
+}

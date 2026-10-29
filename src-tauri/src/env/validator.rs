@@ -3,16 +3,9 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 /// 判断某个环境变量是否属于多值变量（按分号拆分）
-pub fn is_multi_value_var(name: &str, raw_val: &str) -> bool {
-    let upper = name.to_uppercase();
-    if matches!(
-        upper.as_str(),
-        "PATH" | "PATHEXT" | "PSMODULEPATH" | "CLASSPATH" | "INCLUDE" | "LIB"
-    ) {
-        return true;
-    }
-    // 包含分号且包含类似盘符路径特征
-    raw_val.contains(';') && (raw_val.contains(":\\") || raw_val.contains(":/"))
+/// 统一规范：所有环境变量均支持父子层级结构与分号拆分子项
+pub fn is_multi_value_var(_name: &str, _raw_val: &str) -> bool {
+    true
 }
 
 /// 保护变量名单
@@ -107,7 +100,7 @@ pub fn validate_and_enrich_var(
             if is_dup {
                 item_issues.push(EnvIssue {
                     severity: IssueSeverity::Warning,
-                    message: "检测到重复的 Path 项".to_string(),
+                    message: "检测到重复的变量值项".to_string(),
                 });
             }
 
@@ -153,7 +146,7 @@ mod tests {
     fn test_is_multi_and_protected() {
         assert!(is_multi_value_var("Path", "C:\\a;C:\\b"));
         assert!(is_multi_value_var("PATHEXT", ".COM;.EXE"));
-        assert!(!is_multi_value_var("JAVA_HOME", "D:\\jdk"));
+        assert!(is_multi_value_var("JAVA_HOME", "D:\\jdk"));
 
         assert!(is_protected_var("Path"));
         assert!(is_protected_var("SystemRoot"));

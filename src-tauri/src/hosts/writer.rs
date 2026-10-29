@@ -152,3 +152,14 @@ pub fn flush_system_dns() -> AppResult<()> {
     }
     Ok(())
 }
+
+/// 将快照中的 hosts 文件内容恢复到系统 hosts
+pub fn restore_hosts_snapshot(content: &str) -> AppResult<()> {
+    if !is_admin() {
+        return Err(AppError::permission_denied("恢复系统 hosts 需要管理员权限"));
+    }
+    let hosts_path = get_system_hosts_path();
+    atomic_write_file(&hosts_path, content.as_bytes(), true)?;
+    let _ = flush_system_dns();
+    Ok(())
+}

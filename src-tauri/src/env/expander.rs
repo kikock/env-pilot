@@ -24,7 +24,9 @@ pub fn expand_env_string(raw: &str, lookup: &HashMap<String, String>) -> (String
                         found_end = true;
                         break;
                     }
-                    var_name.push(chars.next().unwrap());
+                    if let Some(ch) = chars.next() {
+                        var_name.push(ch);
+                    }
                 }
 
                 if found_end && !var_name.is_empty() {

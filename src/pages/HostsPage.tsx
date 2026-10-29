@@ -1,305 +1,87 @@
-import React, { useState, useEffect } from "react";
-import {
-  api,
-  HostsProfile,
-  HostsSettings,
-  SystemHostsInfo,
-} from "../services/api";
+import React from "react";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { useHostsState } from "./hosts/hooks/useHostsState";
+import { HostsProfileSidebar } from "./hosts/components/HostsProfileSidebar";
 
 export const HostsPage: React.FC = () => {
-  const [profiles, setProfiles] = useState<HostsProfile[]>([]);
-  const [settings, setSettings] = useState<HostsSettings>({
-    is_single_mode: false,
-    write_strategy: "Managed",
-    auto_flush_dns: true,
-  });
-  const [systemHosts, setSystemHosts] = useState<SystemHostsInfo | null>(null);
-  const [selectedId, setSelectedId] = useState<string>("__system__");
-  const [activeContent, setActiveContent] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [isApplying, setIsApplying] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const {
+    profiles,
+    systemHosts,
+    selectedId,
+    activeContent,
+    setActiveContent,
+    isApplying,
+    msg,
+    setMsg,
+    confirmDialog,
+    setConfirmDialog,
+    isNewOpen,
+    setIsNewOpen,
+    newProfileName,
+    setNewProfileName,
+    handleSelectProfile,
+    handleToggleProfile,
+    handleSaveCurrent,
+    handleCreateProfile,
+    handleDeleteProfile,
+    handleFlushDns,
+  } = useHostsState();
 
-  // 通用美化确认弹窗
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title?: string;
-    message: string;
-    subMessage?: string;
-    onConfirm: () => void;
-  } | null>(null);
-
-  // 新建弹窗
-  const [isNewOpen, setIsNewOpen] = useState(false);
-  const [newProfileName, setNewProfileName] = useState("");
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const sys = await api.getSystemHosts();
-      setSystemHosts(sys);
-
-      const [profs, sets] = await api.getHostsProfiles();
-      setProfiles(profs);
-      setSettings(sets);
-
-      if (selectedId === "__system__") {
-        setActiveContent(sys.content);
-      } else {
-        const found = profs.find((p) => p.id === selectedId);
-        if (found) setActiveContent(found.content);
-      }
-    } catch (e: any) {
-      setMsg({ text: `加载 Hosts 失败: ${e?.message || e}`, ok: false });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleSelectProfile = (id: string) => {
-    // 切换前保存上一个编辑中的草稿
-    if (selectedId !== "__system__") {
-      setProfiles((prev) =>
-        prev.map((p) => (p.id === selectedId ? { ...p, content: activeContent } : p))
-      );
-    }
-
-    setSelectedId(id);
-    if (id === "__system__") {
-      setActiveContent(systemHosts?.content || "");
-    } else {
-      const target = profiles.find((p) => p.id === id);
-      if (target) setActiveContent(target.content);
-    }
-  };
-
-  // 拨动开关
-  const handleToggleProfile = async (id: string) => {
-    const updated = profiles.map((p) => {
-      if (settings.is_single_mode) {
-        return { ...p, enabled: p.id === id ? !p.enabled : false };
-      }
-      return p.id === id ? { ...p, enabled: !p.enabled } : p;
-    });
-
-    setProfiles(updated);
-    // 自动应用到系统
-    try {
-      setIsApplying(true);
-      await api.applyHosts(updated, settings);
-      const sys = await api.getSystemHosts();
-      setSystemHosts(sys);
-      if (selectedId === "__system__") setActiveContent(sys.content);
-      setMsg({ text: "Hosts 方案已成功切换并更新到系统 hosts 文件！", ok: true });
-    } catch (e: any) {
-      setMsg({ text: `应用失败: ${e?.message || e}`, ok: false });
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  // 保存当前方案
-  const handleSaveCurrent = async () => {
-    if (selectedId === "__system__") return;
-
-    const updated = profiles.map((p) =>
-      p.id === selectedId ? { ...p, content: activeContent } : p
-    );
-    setProfiles(updated);
-
-    try {
-      setIsApplying(true);
-      await api.saveHostsProfiles(updated, settings);
-      // 如果当前编辑的方案正在启用，则联动应用到系统
-      const current = updated.find((p) => p.id === selectedId);
-      if (current?.enabled) {
-        await api.applyHosts(updated, settings);
-        const sys = await api.getSystemHosts();
-        setSystemHosts(sys);
-      }
-      setMsg({ text: "方案已成功保存并实时同步生效！", ok: true });
-    } catch (e: any) {
-      setMsg({ text: `保存失败: ${e?.message || e}`, ok: false });
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  // 新建方案
-  const handleCreateProfile = async () => {
-    if (!newProfileName.trim()) return;
-    const newProf: HostsProfile = {
-      id: `hosts-${Date.now()}`,
-      name: newProfileName.trim(),
-      kind: { type: "Local" },
-      enabled: false,
-      content: `# ${newProfileName.trim()}\r\n127.0.0.1 example.local`,
-      order: profiles.length,
-    };
-    const nextProfiles = [...profiles, newProf];
-    setProfiles(nextProfiles);
-    await api.saveHostsProfiles(nextProfiles, settings);
-    setIsNewOpen(false);
-    setNewProfileName("");
-    handleSelectProfile(newProf.id);
-  };
-
-  // 删除方案
-  const handleDeleteProfile = (id: string, name: string) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: "删除 Hosts 方案",
-      message: `确定要删除 Hosts 方案 "${name}" 吗？`,
-      subMessage: "此操作将永久移除该方案的自定义域名解析规则。",
-      onConfirm: async () => {
-        setConfirmDialog(null);
-        const nextProfiles = profiles.filter((p) => p.id !== id);
-        setProfiles(nextProfiles);
-        await api.saveHostsProfiles(nextProfiles, settings);
-        handleSelectProfile("__system__");
-        setMsg({ text: `已成功删除方案 "${name}"`, ok: true });
-      },
-    });
-  };
-
-  // 刷新 DNS
-  const handleFlushDns = async () => {
-    try {
-      await api.flushDns();
-      setMsg({ text: "系统 DNS 缓存已成功刷新！", ok: true });
-    } catch (e: any) {
-      setMsg({ text: `刷新 DNS 失败: ${e?.message || e}`, ok: false });
-    }
-  };
-
-  const lineCount = activeContent.split("\n").length;
+  const isReadonly = selectedId === "__system__";
+  const currentProfile = profiles.find((p) => p.id === selectedId);
 
   return (
-    <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
-      {/* 左侧方案管理导航 */}
-      <div
-        style={{
-          width: "280px",
-          background: "var(--bg-sidebar)",
-          borderRight: "1px solid var(--border-subtle)",
-          display: "flex",
-          flexDirection: "column",
-          padding: "12px",
-          gap: "8px",
+    <div style={{ display: "flex", height: "100%", width: "100%", overflow: "hidden" }}>
+      {/* 左侧方案侧边栏 */}
+      <HostsProfileSidebar
+        systemHosts={systemHosts}
+        profiles={profiles}
+        selectedId={selectedId}
+        onSelectProfile={handleSelectProfile}
+        onToggleProfile={handleToggleProfile}
+        onOpenCreate={() => {
+          setNewProfileName("");
+          setIsNewOpen(true);
         }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ fontWeight: 600, fontSize: "13px" }}>方案列表 (SwitchHosts)</span>
-          <button
-            className="fluent-btn"
-            style={{ padding: "3px 8px", fontSize: "11px" }}
-            onClick={() => setIsNewOpen(true)}
-          >
-            + 新建方案
-          </button>
-        </div>
+        onDeleteProfile={handleDeleteProfile}
+      />
 
-        {/* 系统 Hosts 固定第一项 */}
-        <div
-          className={`nav-item ${selectedId === "__system__" ? "active" : ""}`}
-          onClick={() => handleSelectProfile("__system__")}
-          style={{ justifyContent: "space-between" }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span>🖥</span>
-            <span>系统 Hosts (只读查看)</span>
-          </div>
-          <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-            {systemHosts?.is_readonly ? "只读" : "可写"}
-          </span>
-        </div>
-
-        <div style={{ height: "1px", background: "var(--border-subtle)", margin: "4px 0" }} />
-
-        {/* 用户方案列表 */}
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
-          {profiles.map((p) => (
-            <div
-              key={p.id}
-              className={`nav-item ${selectedId === p.id ? "active" : ""}`}
-              onClick={() => handleSelectProfile(p.id)}
-              style={{ justifyContent: "space-between" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
-                <span>📄</span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {p.name}
-                </span>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }} onClick={(e) => e.stopPropagation()}>
-                {/* 方案开关 */}
-                <input
-                  type="checkbox"
-                  style={{ cursor: "pointer", width: "16px", height: "16px" }}
-                  checked={p.enabled}
-                  onChange={() => handleToggleProfile(p.id)}
-                  title={p.enabled ? "点击停用" : "点击启用并写入系统 hosts"}
-                />
-
-                <span
-                  style={{ color: "var(--text-muted)", cursor: "pointer", fontSize: "12px" }}
-                  onClick={() => handleDeleteProfile(p.id, p.name)}
-                  title="删除方案"
-                >
-                  🗑
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 底部模式与快捷工具 */}
-        <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", color: "var(--text-muted)" }}>
-            <span>托管模式:</span>
-            <span style={{ color: "var(--color-success)" }}># EnvPilot BEGIN/END 区块</span>
-          </div>
-          <button className="fluent-btn" style={{ width: "100%", justifyContent: "center" }} onClick={handleFlushDns}>
-            ⚡ 刷新系统 DNS 缓存
-          </button>
-        </div>
-      </div>
-
-      {/* 右侧 Hosts 文本编辑器 */}
+      {/* 右侧编辑器区域 */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "var(--bg-app)" }}>
         {/* 工具栏 */}
-        <div className="toolbar">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontWeight: 600 }}>
-              {selectedId === "__system__"
-                ? "系统 hosts 真实内容"
-                : `编辑方案: ${profiles.find((p) => p.id === selectedId)?.name || ""}`}
+        <div className="toolbar" style={{ background: "var(--bg-sidebar)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "16px" }}>{isReadonly ? "💻" : "📄"}</span>
+            <span style={{ fontWeight: 600, fontSize: "14px" }}>
+              {isReadonly ? "系统当前生效 Hosts (只读)" : currentProfile?.name || "未知方案"}
             </span>
-            {selectedId === "__system__" && (
-              <span className="badge badge-standard">系统文件只读防护</span>
+            {!isReadonly && currentProfile && (
+              <span
+                className={`badge ${currentProfile.enabled ? "badge-success" : "badge-standard"}`}
+                style={{ fontSize: "11px" }}
+              >
+                {currentProfile.enabled ? "● 已启用" : "○ 已停用"}
+              </span>
             )}
           </div>
 
           <div className="toolbar-actions">
-            {selectedId !== "__system__" && (
+            <button className="fluent-btn" onClick={handleFlushDns} title="清空并刷新本地 DNS 解析缓存">
+              <span>🧹</span> 刷新 DNS 缓存
+            </button>
+            {!isReadonly && (
               <button
                 className="fluent-btn fluent-btn-primary"
                 onClick={handleSaveCurrent}
                 disabled={isApplying}
               >
-                💾 保存并实时同步
+                <span>💾</span> {isApplying ? "保存并同步中..." : "保存方案"}
               </button>
             )}
           </div>
         </div>
 
-        {/* 状态消息 */}
+        {/* 提示消息 */}
         {msg && (
           <div
             style={{
@@ -318,36 +100,40 @@ export const HostsPage: React.FC = () => {
           </div>
         )}
 
-        {/* 等宽代码编辑区 */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        {/* 文本编辑器 */}
+        <div style={{ flex: 1, padding: "12px", display: "flex", flexDirection: "column" }}>
           <textarea
+            className="fluent-input"
             style={{
-              width: "100%",
-              height: "100%",
-              padding: "16px",
-              background: "var(--bg-surface)",
-              color: "var(--text-main)",
-              border: "none",
-              outline: "none",
-              resize: "none",
+              flex: 1,
               fontFamily: "var(--font-mono)",
               fontSize: "13px",
-              lineHeight: "1.6",
-              whiteSpace: "pre",
+              lineHeight: 1.6,
+              resize: "none",
+              padding: "12px",
+              background: isReadonly ? "rgba(0,0,0,0.05)" : "var(--bg-card)",
+              cursor: isReadonly ? "default" : "text",
             }}
+            readOnly={isReadonly}
             value={activeContent}
             onChange={(e) => setActiveContent(e.target.value)}
-            readOnly={selectedId === "__system__"}
-            placeholder="在此输入 hosts 规则，例如：\n127.0.0.1 my.app.local\n0.0.0.0 ad.tracker.com"
+            placeholder="# 在此输入 Hosts 规则，例如:\n# 127.0.0.1 localhost\n# 0.0.0.0 ad.example.com"
           />
         </div>
 
-        {/* 底部状态 */}
+        {/* 底部统计栏 */}
         <div className="app-statusbar">
           <div>
-            行数: {lineCount} 行 • 编码: {systemHosts?.encoding || "UTF-8"} • 换行符: CRLF
+            行数: {activeContent.split("\n").length} 行 • 有效规则:{" "}
+            {
+              activeContent
+                .split("\n")
+                .map((l) => l.trim())
+                .filter((l) => l && !l.startsWith("#")).length
+            }{" "}
+            条
           </div>
-          <div>格式说明: IP 与主机名之间以空格或制表符隔开，'#' 为注释</div>
+          <div>提示：每行一条，前缀 # 表示注释；右侧勾选即刻应用</div>
         </div>
       </div>
 
@@ -361,17 +147,22 @@ export const HostsPage: React.FC = () => {
                 ✕
               </button>
             </div>
-            <div className="modal-body">
-              <label style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px", display: "block" }}>
-                方案名称
-              </label>
-              <input
-                className="fluent-input"
-                placeholder="如 测试机房屏蔽, 生产域名映射"
-                value={newProfileName}
-                onChange={(e) => setNewProfileName(e.target.value)}
-                autoFocus
-              />
+            <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px", display: "block" }}>
+                  方案名称
+                </label>
+                <input
+                  className="fluent-input"
+                  placeholder="如 开发环境, 广告屏蔽, GitHub 加速"
+                  value={newProfileName}
+                  onChange={(e) => setNewProfileName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreateProfile();
+                  }}
+                  autoFocus
+                />
+              </div>
             </div>
             <div className="modal-footer">
               <button className="fluent-btn" onClick={() => setIsNewOpen(false)}>
@@ -385,7 +176,7 @@ export const HostsPage: React.FC = () => {
         </div>
       )}
 
-      {/* 美化后的通用确认弹窗 */}
+      {/* 确认提示模态弹窗 */}
       {confirmDialog && (
         <ConfirmModal
           isOpen={confirmDialog.isOpen}

@@ -140,6 +140,27 @@ impl SnapshotStore {
             }
         }
     }
+
+    /// 执行快照一键回滚
+    pub fn rollback(id: &str, module: SnapshotModule) -> AppResult<String> {
+        match module {
+            SnapshotModule::Env => {
+                let snap = Self::load::<crate::env::model::EnvSnapshotPayload>(&module, id)?;
+                crate::env::registry::restore_env_snapshot(&snap.payload)?;
+                Ok(format!("成功回滚环境变量快照: {}", snap.summary))
+            }
+            SnapshotModule::Hosts => {
+                let snap = Self::load::<String>(&module, id)?;
+                crate::hosts::writer::restore_hosts_snapshot(&snap.payload)?;
+                Ok(format!("成功回滚系统 Hosts 快照: {}", snap.summary))
+            }
+            SnapshotModule::Net => {
+                let snap = Self::load::<crate::net::model::NetSnapshotPayload>(&module, id)?;
+                crate::net::executor::restore_net_snapshot(&snap.payload)?;
+                Ok(format!("成功回滚网络配置快照: {}", snap.summary))
+            }
+        }
+    }
 }
 
 #[cfg(test)]

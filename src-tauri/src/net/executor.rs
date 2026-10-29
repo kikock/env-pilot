@@ -276,3 +276,49 @@ fn apply_system_proxy(proxy: &crate::net::model::ProxyConfig) -> AppResult<()> {
 
     Ok(())
 }
+
+/// 恢复网络适配器快照
+pub fn restore_net_snapshot(payload: &NetSnapshotPayload) -> AppResult<()> {
+    if !is_admin() {
+        return Err(AppError::permission_denied("恢复网卡配置需要管理员权限"));
+    }
+    for adp in &payload.adapters {
+        if adp.is_dhcp {
+            let _ = run_command(
+                "netsh",
+                &["interface", "ipv4", "set", "address", &format!("name={}", adp.name), "source=dhcp"],
+                None,
+            );
+            let _ = run_command(
+                "netsh",
+                &["interface", "ipv4", "set", "dnsservers", &format!("name={}", adp.name), "source=dhcp"],
+                None,
+            );
+        } else if !adp.ip.is_empty() {
+            let mask = if adp.mask.is_empty() { "255.255.255.0" } else { &adp.mask };
+            let name_arg = format!("name={}", adp.name);
+            let addr_arg = format!("address={}", adp.ip);
+            let mask_arg = format!("mask={}", mask);
+            let gw_arg = format!("gateway={}", adp.gateway);
+
+            let mut args = vec![
+                "interface", "ipv4", "set", "address",
+                &name_arg, "source=static",
+                &addr_arg, &mask_arg,
+            ];
+            if !adp.gateway.is_empty() {
+                args.push(&gw_arg);
+            }
+            let _ = run_command("netsh", &args, None);
+
+            if let Some(first_dns) = adp.dns.first() {
+                let _ = run_command(
+                    "netsh",
+                    &["interface", "ipv4", "set", "dnsservers", &format!("name={}", adp.name), "source=static", &format!("address={}", first_dns), "register=none", "validate=no"],
+                    None,
+                );
+            }
+        }
+    }
+    Ok(())
+}

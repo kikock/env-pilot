@@ -77,7 +77,7 @@ pub fn run_command(
 }
 
 /// Windows 控制台输出可能为 OEM (中文系统默认 GBK 代码页 936) 或 UTF-8
-fn decode_oem(bytes: &[u8]) -> String {
+pub fn decode_oem(bytes: &[u8]) -> String {
     if bytes.is_empty() {
         return String::new();
     }

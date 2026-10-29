@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api, SnapshotMeta } from "../services/api";
+import { ConfirmModal } from "../components/ConfirmModal";
 import {
   ACCENT_PRESETS,
   DARK_PRESETS,
@@ -9,14 +10,31 @@ import {
   ThemeConfig,
   ThemeMode,
 } from "../services/theme";
+import { SnapshotHistoryCard } from "./settings/SnapshotHistoryCard";
 
 export const SettingsPage: React.FC = () => {
   const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([]);
   const [activeModule, setActiveModule] = useState<"env" | "hosts" | "net">("env");
   const [loading, setLoading] = useState(false);
-
-  // 主题状态
   const [themeCfg, setThemeCfg] = useState<ThemeConfig>(getThemeConfig());
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    subMessage?: string;
+    type?: "danger" | "warning" | "info";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  useEffect(() => {
+    if (msg) {
+      const timer = window.setTimeout(() => setMsg(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [msg]);
 
   const handleModeChange = (mode: ThemeMode) => {
     const next = { ...themeCfg, mode };
@@ -55,123 +73,172 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleRollback = (snap: SnapshotMeta) => {
+    setConfirmDialog({
+      isOpen: true,
+      type: "danger",
+      title: "确认恢复历史快照",
+      message: `确定要将系统配置恢复到此快照吗？`,
+      subMessage: `模块: ${activeModule.toUpperCase()} | 快照时间: ${snap.created_at}\n快照摘要: ${snap.summary}`,
+      confirmText: "确认恢复快照",
+      cancelText: "取消",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          const res = await api.rollbackSnapshot(snap.id, activeModule);
+          setMsg({ text: res, ok: true });
+          loadSnapshots();
+        } catch (e: any) {
+          setMsg({ text: `快照恢复失败: ${e?.message || e}`, ok: false });
+        }
+      },
+    });
+  };
+
   useEffect(() => {
     loadSnapshots();
   }, [activeModule]);
 
-  const activePresets =
-    themeCfg.mode === "light" ||
-    (themeCfg.mode === "system" && !window.matchMedia("(prefers-color-scheme: dark)").matches)
-      ? LIGHT_PRESETS
-      : DARK_PRESETS;
-
-  const currentPresetId =
-    themeCfg.mode === "light" ||
-    (themeCfg.mode === "system" && !window.matchMedia("(prefers-color-scheme: dark)").matches)
-      ? themeCfg.selectedLightPreset
-      : themeCfg.selectedDarkPreset;
-
   return (
-    <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div>
-        <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "4px" }}>
-          ⚙ 个性化主题与系统设置
-        </h2>
-        <p style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
-          自定应用视觉模式、色相主题色盘与强调色，并查看系统安全快照库历史。
-        </p>
-      </div>
+    <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto", height: "100%" }}>
+      {msg && (
+        <div
+          style={{
+            padding: "10px 16px",
+            background: msg.ok ? "var(--color-success-bg)" : "var(--color-danger-bg)",
+            color: msg.ok ? "var(--color-success)" : "var(--color-danger)",
+            borderRadius: "var(--radius-sm)",
+            fontSize: "13px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span>{msg.text}</span>
+          <span style={{ cursor: "pointer" }} onClick={() => setMsg(null)}>✕</span>
+        </div>
+      )}
 
-      {/* 现代主题配置卡片 (对标现代高保真设计) */}
-      <div className="theme-card">
-        {/* 顶部标题与模式切换按钮组 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "15px", fontWeight: 600 }}>主题模式</span>
-          <div className="theme-segmented">
-            <button
-              className={`theme-seg-btn ${themeCfg.mode === "light" ? "active" : ""}`}
-              onClick={() => handleModeChange("light")}
-            >
-              <span>☼</span> 浅色
-            </button>
-            <button
-              className={`theme-seg-btn ${themeCfg.mode === "system" ? "active" : ""}`}
-              onClick={() => handleModeChange("system")}
-            >
-              <span>💻</span> 系统
-            </button>
-            <button
-              className={`theme-seg-btn ${themeCfg.mode === "dark" ? "active" : ""}`}
-              onClick={() => handleModeChange("dark")}
-            >
-              <span>☾</span> 深色
-            </button>
-          </div>
+      {/* 视觉主题设置 */}
+      <div className="env-var-card" style={{ padding: "16px" }}>
+        <div style={{ fontWeight: 600, fontSize: "14px", marginBottom: "12px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "8px" }}>
+          🎨 Fluent Design 视觉主题定制
         </div>
 
-        <div style={{ height: "1px", background: "var(--border-subtle)", margin: "0 -4px" }} />
-
-        {/* 主题色盘 (圆形色块列表) */}
-        <div>
-          <div style={{ fontSize: "13px", fontWeight: 600, marginBottom: "12px", color: "var(--text-main)" }}>
-            {themeCfg.mode === "dark" ? "深色主题色盘" : "浅色主题色盘"}
-          </div>
-          <div className="palette-grid">
-            {activePresets.map((preset) => {
-              const isSelected = preset.id === currentPresetId;
-              return (
-                <div
-                  key={preset.id}
-                  className={`color-swatch-circle ${isSelected ? "selected" : ""}`}
-                  style={{
-                    backgroundColor: preset.bgApp,
-                    border: `1.5px solid ${preset.borderSubtle}`,
-                  }}
-                  onClick={() => handleSelectPreset(preset.id, preset.mode)}
-                  title={`${preset.name} (${preset.bgApp})`}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* 明暗模式 */}
+          <div>
+            <label style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px", display: "block" }}>
+              外观基调 (Appearance Mode)
+            </label>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {(["system", "dark", "light"] as ThemeMode[]).map((m) => (
+                <button
+                  key={m}
+                  className={`fluent-btn ${themeCfg.mode === m ? "fluent-btn-primary" : ""}`}
+                  style={{ minWidth: "90px" }}
+                  onClick={() => handleModeChange(m)}
                 >
-                  {isSelected && (
-                    <span
-                      className="check-mark"
-                      style={{
-                        color: preset.mode === "light" ? "#1a1a1a" : "#ffffff",
-                      }}
-                    >
-                      ✓
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={{ height: "1px", background: "var(--border-subtle)", margin: "0 -4px" }} />
-
-        {/* 使用自定义强调色 Switch 开关 */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: 600 }}>使用自定义强调色</div>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
-                覆盖主题自带的强调色
-              </div>
+                  {m === "system" ? "💻 跟随系统" : m === "dark" ? "🌙 暗色深邃" : "☀️ 亮色清新"}
+                </button>
+              ))}
             </div>
-            <label className="fluent-switch">
+          </div>
+
+          {/* 根据当前生效的主题模式，仅展示当前主题的微调预设 */}
+          {(() => {
+            const isDarkEffective =
+              themeCfg.mode === "dark" ||
+              (themeCfg.mode === "system" &&
+                typeof window !== "undefined" &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+            return isDarkEffective ? (
+              <div>
+                <label style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px", display: "block" }}>
+                  当前暗色主题微调预设 (Dark Presets)
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
+                  {DARK_PRESETS.map((p) => {
+                    const isSel = themeCfg.selectedDarkPreset === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSelectPreset(p.id, "dark")}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "var(--radius-sm)",
+                          border: isSel ? "2px solid var(--color-primary)" : "1px solid var(--border-subtle)",
+                          background: p.bgApp,
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: p.accent }} />
+                          <span style={{ fontSize: "11px", fontWeight: isSel ? 600 : "normal", color: p.textMain }}>
+                            {p.name}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px", display: "block" }}>
+                  当前亮色主题微调预设 (Light Presets)
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
+                  {LIGHT_PRESETS.map((p) => {
+                    const isSel = themeCfg.selectedLightPreset === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSelectPreset(p.id, "light")}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "var(--radius-sm)",
+                          border: isSel ? "2px solid var(--color-primary)" : "1px solid var(--border-subtle)",
+                          background: p.bgApp,
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: p.accent }} />
+                          <span style={{ fontSize: "11px", fontWeight: isSel ? 600 : "normal", color: p.textMain }}>
+                            {p.name}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 自定义主色调 */}
+          <div>
+            <label style={{ fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={themeCfg.useCustomAccent}
                 onChange={(e) => handleToggleCustomAccent(e.target.checked)}
               />
-              <span className="switch-slider" />
+              <span style={{ fontWeight: 500 }}>启用自定义主强调色 (Accent Color)</span>
             </label>
           </div>
 
-          {/* 展开的强调色选色盘 */}
           {themeCfg.useCustomAccent && (
-            <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>选择或拾取强调色：</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+            <div style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 {ACCENT_PRESETS.map((acc) => (
                   <button
                     key={acc.color}
@@ -181,23 +248,21 @@ export const SettingsPage: React.FC = () => {
                       height: "28px",
                       borderRadius: "50%",
                       backgroundColor: acc.color,
-                      border: themeCfg.customAccent === acc.color ? "2.5px solid var(--text-main)" : "1px solid rgba(0,0,0,0.1)",
+                      border: themeCfg.customAccent.toLowerCase() === acc.color.toLowerCase() ? "2.5px solid var(--text-main)" : "1px solid rgba(0,0,0,0.1)",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      transform: themeCfg.customAccent === acc.color ? "scale(1.15)" : "none",
+                      transform: themeCfg.customAccent.toLowerCase() === acc.color.toLowerCase() ? "scale(1.15)" : "none",
                       transition: "all 0.15s ease",
                     }}
                     title={acc.name}
                   >
-                    {themeCfg.customAccent === acc.color && (
+                    {themeCfg.customAccent.toLowerCase() === acc.color.toLowerCase() && (
                       <span style={{ color: "#ffffff", fontSize: "12px", fontWeight: "bold" }}>✓</span>
                     )}
                   </button>
                 ))}
-
-                {/* 拾色器输入 */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "6px" }}>
                   <input
                     type="color"
@@ -211,7 +276,6 @@ export const SettingsPage: React.FC = () => {
                       cursor: "pointer",
                       background: "transparent",
                     }}
-                    title="自定义拾色器"
                   />
                   <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                     {themeCfg.customAccent.toUpperCase()}
@@ -223,70 +287,14 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 历史快照时间线 */}
-      <div className="env-var-card" style={{ padding: "16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "8px" }}>
-          <span style={{ fontWeight: 600, fontSize: "14px" }}>📸 自动安全快照备份 (最近50份)</span>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <button
-              className={`fluent-btn ${activeModule === "env" ? "fluent-btn-primary" : ""}`}
-              onClick={() => setActiveModule("env")}
-            >
-              环境变量快照
-            </button>
-            <button
-              className={`fluent-btn ${activeModule === "hosts" ? "fluent-btn-primary" : ""}`}
-              onClick={() => setActiveModule("hosts")}
-            >
-              Hosts 文件快照
-            </button>
-            <button
-              className={`fluent-btn ${activeModule === "net" ? "fluent-btn-primary" : ""}`}
-              onClick={() => setActiveModule("net")}
-            >
-              网络配置快照
-            </button>
-          </div>
-        </div>
-
-        {loading ? (
-          <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>
-            正在加载快照历史...
-          </div>
-        ) : snapshots.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>
-            当前模块暂无历史快照记录（系统将在首次应用更改时自动生成）
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {snapshots.map((snap) => (
-              <div
-                key={snap.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "8px 12px",
-                  background: "rgba(0, 0, 0, 0.15)",
-                  borderRadius: "var(--radius-sm)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "12px",
-                }}
-              >
-                <div>
-                  <span style={{ color: "var(--text-muted)", marginRight: "12px" }}>
-                    {snap.created_at}
-                  </span>
-                  <span style={{ fontWeight: 600 }}>{snap.summary}</span>
-                </div>
-                <span style={{ color: "var(--color-info)", fontSize: "11px" }}>
-                  ID: {snap.id}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* 历史快照组件 */}
+      <SnapshotHistoryCard
+        activeModule={activeModule}
+        setActiveModule={setActiveModule}
+        snapshots={snapshots}
+        loading={loading}
+        onRollback={handleRollback}
+      />
 
       {/* 软件与系统运行架构说明 */}
       <div className="env-var-card" style={{ padding: "16px" }}>
@@ -300,6 +308,13 @@ export const SettingsPage: React.FC = () => {
           <div>• 网络适配器：通过 Win32 <code>GetAdaptersAddresses</code> 探查实时状态，并通过系统 <code>netsh</code> 工具按接口下发配置</div>
         </div>
       </div>
+
+      {confirmDialog && (
+        <ConfirmModal
+          {...confirmDialog}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 };

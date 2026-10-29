@@ -1,140 +1,29 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import {
+  SystemStatus,
+  EnvState,
+  EnvChange,
+  SystemHostsInfo,
+  HostsProfile,
+  HostsSettings,
+  AdapterInfo,
+  NetProfile,
+  SnapshotMeta,
+  ScannedHost,
+  NetConnectionInfo,
+} from "./types";
+
+export * from "./types";
 
 export const isTauriEnv = (): boolean => {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 };
 
-// ---------------- 类型定义 ----------------
-
-export interface SystemStatus {
-  is_admin: boolean;
-  user_name: string;
-  os_info: string;
-}
-
-export type EnvScope = "System" | "User";
-export type ValueKind = "Sz" | "ExpandSz" | "Dynamic";
-export type IssueSeverity = "Error" | "Warning" | "Info";
-
-export interface EnvIssue {
-  severity: IssueSeverity;
-  message: string;
-}
-
-export interface EnvItem {
-  raw: string;
-  expanded: string;
-  exists: boolean;
-  is_duplicate: boolean;
-  is_empty: boolean;
-  issues: EnvIssue[];
-}
-
-export interface EnvVar {
-  name: string;
-  raw_value: string;
-  expanded_value: string;
-  kind: ValueKind;
-  scope: EnvScope;
-  is_multi: boolean;
-  items: EnvItem[];
-  issues: EnvIssue[];
-  is_protected: boolean;
-}
-
-export interface EnvState {
-  system: EnvVar[];
-  user: EnvVar[];
-  revision: string;
-}
-
-export interface EnvChange {
-  scope: EnvScope;
-  name: string;
-  old_value: string | null;
-  new_value: string | null;
-  kind: ValueKind;
-}
-
-export interface SystemHostsInfo {
-  path: string;
-  content: string;
-  is_readonly: boolean;
-  encoding: string;
-}
-
-export interface HostsProfile {
-  id: string;
-  name: string;
-  kind: { type: "Local" } | { type: "Remote"; url: string };
-  enabled: boolean;
-  content: string;
-  order: number;
-}
-
-export interface HostsSettings {
-  is_single_mode: boolean;
-  write_strategy: "Managed" | "Overwrite";
-  auto_flush_dns: boolean;
-}
-
-export interface AdapterInfo {
-  guid: string;
-  index: number;
-  name: string;
-  description: string;
-  mac: string;
-  is_dhcp: boolean;
-  ip: string;
-  mask: string;
-  gateway: string;
-  dns: string[];
-  is_up: boolean;
-  is_wireless: boolean;
-}
-
-export interface AdapterTabConfig {
-  adapter_name: string;
-  adapter_desc: string;
-  apply_ip: boolean;
-  ipv4: {
-    mode: "Dhcp" | "Static";
-    ip: string;
-    mask: string;
-    gateway: string;
-  };
-  apply_dns: boolean;
-  dns: {
-    mode: "Dhcp" | "Static";
-    primary: string;
-    secondary: string;
-  };
-}
-
-export interface NetProfile {
-  id: string;
-  group: string;
-  name: string;
-  adapters: AdapterTabConfig[];
-  proxy: {
-    mode: "Keep" | "Disable" | "Manual";
-    server: string;
-    bypass: string;
-  };
-  linked_hosts_id: string | null;
-}
-
-export interface SnapshotMeta {
-  id: string;
-  module: "Env" | "Hosts" | "Net";
-  created_at: string;
-  summary: string;
-}
-
 // ---------------- API 调用包装 ----------------
 
 export const api = {
-  // 系统
+  // 系统与提权
   async getSystemStatus(): Promise<SystemStatus> {
     if (!isTauriEnv()) {
       return { is_admin: false, user_name: "WebDebugUser", os_info: "Windows 11 (Browser Mock)" };
@@ -152,6 +41,13 @@ export const api = {
   async listSnapshots(module?: string): Promise<SnapshotMeta[]> {
     if (!isTauriEnv()) return [];
     return await invoke<SnapshotMeta[]>("list_snapshots_cmd", { module });
+  },
+
+  async rollbackSnapshot(id: string, module: string): Promise<string> {
+    if (!isTauriEnv()) {
+      return `[Web 预览模式] 模拟已成功回滚快照: ${id}`;
+    }
+    return await invoke<string>("rollback_snapshot_cmd", { id, module });
   },
 
   // 环境变量
@@ -180,10 +76,19 @@ export const api = {
             expanded_value: "D:\\developmentTool\\mise\\data\\installs\\java\\temurin-21.0.12+101.0.LTS",
             kind: "Sz",
             scope: "System",
-            is_multi: false,
+            is_multi: true,
             is_protected: false,
             issues: [],
-            items: []
+            items: [
+              {
+                raw: "D:\\developmentTool\\mise\\data\\installs\\java\\temurin-21.0.12+101.0.LTS",
+                expanded: "D:\\developmentTool\\mise\\data\\installs\\java\\temurin-21.0.12+101.0.LTS",
+                exists: true,
+                is_duplicate: false,
+                is_empty: false,
+                issues: []
+              }
+            ]
           }
         ],
         user: [
@@ -262,23 +167,37 @@ export const api = {
     await invoke("flush_dns_cmd");
   },
 
-  // 网络适配器
+  // 网络方案
   async listAdapters(): Promise<AdapterInfo[]> {
     if (!isTauriEnv()) {
       return [
         {
-          guid: "{mock-wlan}",
+          guid: "{mock-guid-wlan}",
           index: 12,
           name: "WLAN",
-          description: "Intel(R) Wi-Fi 6E AX211 160MHz",
-          mac: "AA-BB-CC-DD-EE-FF",
+          description: "Intel(R) Wi-Fi 6 AX201 160MHz",
+          mac: "00-11-22-33-44-55",
           is_dhcp: true,
-          ip: "192.168.1.108",
+          ip: "192.168.1.105",
           mask: "255.255.255.0",
           gateway: "192.168.1.1",
-          dns: ["223.5.5.5", "119.29.29.29"],
+          dns: ["192.168.1.1", "8.8.8.8"],
           is_up: true,
           is_wireless: true
+        },
+        {
+          guid: "{mock-guid-eth}",
+          index: 5,
+          name: "以太网",
+          description: "Realtek PCIe GbE Family Controller",
+          mac: "AA-BB-CC-DD-EE-FF",
+          is_dhcp: true,
+          ip: "",
+          mask: "",
+          gateway: "",
+          dns: [],
+          is_up: false,
+          is_wireless: false
         }
       ];
     }
@@ -290,37 +209,37 @@ export const api = {
       return [
         {
           id: "home",
-          group: "",
-          name: "家",
+          group: "Default",
+          name: "家庭无线 (DHCP 自动获取)",
           adapters: [
             {
               adapter_name: "WLAN",
-              adapter_desc: "Intel(R) Wi-Fi 6E AX211",
-              apply_ip: true,
-              ipv4: { mode: "Dhcp", ip: "", mask: "", gateway: "" },
-              apply_dns: true,
-              dns: { mode: "Static", primary: "223.5.5.5", secondary: "119.29.29.29" }
-            }
-          ],
-          proxy: { mode: "Disable", server: "", bypass: "" },
-          linked_hosts_id: "ide"
-        },
-        {
-          id: "office",
-          group: "",
-          name: "公司",
-          adapters: [
-            {
-              adapter_name: "以太网",
-              adapter_desc: "Realtek Gaming 2.5GbE Family Controller",
+              adapter_desc: "Intel(R) Wi-Fi 6 AX201 160MHz",
               apply_ip: true,
               ipv4: { mode: "Dhcp", ip: "", mask: "", gateway: "" },
               apply_dns: true,
               dns: { mode: "Dhcp", primary: "", secondary: "" }
             }
           ],
-          proxy: { mode: "Disable", server: "", bypass: "" },
+          proxy: { mode: "Keep", server: "", bypass: "" },
           linked_hosts_id: null
+        },
+        {
+          id: "company",
+          group: "Default",
+          name: "公司静态内网 (192.168.10.x)",
+          adapters: [
+            {
+              adapter_name: "WLAN",
+              adapter_desc: "Intel(R) Wi-Fi 6 AX201 160MHz",
+              apply_ip: true,
+              ipv4: { mode: "Static", ip: "192.168.10.88", mask: "255.255.255.0", gateway: "192.168.10.1" },
+              apply_dns: true,
+              dns: { mode: "Static", primary: "192.168.10.1", secondary: "114.114.114.114" }
+            }
+          ],
+          proxy: { mode: "Keep", server: "", bypass: "" },
+          linked_hosts_id: "ide"
         }
       ];
     }
@@ -335,5 +254,92 @@ export const api = {
   async activateNetProfile(profileId: string): Promise<string> {
     if (!isTauriEnv()) return "mock-net-snap";
     return await invoke<string>("activate_net_profile_cmd", { profileId });
+  },
+
+  async runNetTool(cmd: string, args: string, target: string): Promise<string> {
+    if (!isTauriEnv()) {
+      return `[Web 预览模式] 模拟执行: ${cmd} ${args} ${target}\r\n正在 Ping ${target || "127.0.0.1"} 具有 32 字节的数据:\r\n来自 ${target || "127.0.0.1"} 的回复: 字节=32 时间<1ms TTL=128\r\n来自 ${target || "127.0.0.1"} 的回复: 字节=32 时间<1ms TTL=128`;
+    }
+    return await invoke<string>("run_net_tool_cmd", { cmd, args, target });
+  },
+
+  async startNetToolStream(
+    sessionId: string,
+    cmd: string,
+    args: string,
+    target: string,
+    onLine: (line: string) => void,
+    onDone: () => void
+  ): Promise<() => void> {
+    if (!isTauriEnv()) {
+      let count = 0;
+      onLine(`[Web 模拟流式启动]: ${cmd} ${args} ${target}`);
+      const timer = setInterval(() => {
+        count++;
+        onLine(`来自 ${target || "127.0.0.1"} 的回复: 字节=32 时间=${Math.floor(Math.random() * 4)}ms TTL=128 (第 ${count} 次)`);
+        if (count >= 10 && !args.includes("-t") && !args.includes("/t")) {
+          clearInterval(timer);
+          onDone();
+        }
+      }, 1000);
+      return () => {
+        clearInterval(timer);
+        onDone();
+      };
+    }
+
+    const unlistenLine = await listen<string>(`net-tool-line-${sessionId}`, (event) => {
+      onLine(event.payload);
+    });
+
+    const unlistenDone = await listen(`net-tool-done-${sessionId}`, () => {
+      unlistenLine();
+      unlistenDone();
+      onDone();
+    });
+
+    await invoke("start_net_tool_stream_cmd", {
+      sessionId,
+      cmd,
+      args,
+      target,
+    });
+
+    return async () => {
+      unlistenLine();
+      unlistenDone();
+      try {
+        await invoke("stop_net_tool_stream_cmd", { sessionId });
+      } catch (err) {
+        console.error("停止流式命令异常:", err);
+      }
+    };
+  },
+
+  async stopNetToolStream(sessionId: string): Promise<void> {
+    if (!isTauriEnv()) return;
+    await invoke("stop_net_tool_stream_cmd", { sessionId });
+  },
+
+  async scanSubnet(startIp: string, endIp: string): Promise<ScannedHost[]> {
+    if (!isTauriEnv()) {
+      return [
+        { ip: "192.168.1.1", hostname: "Gateway.Router", mac: "00:11:22:33:44:55", vendor: "TP-Link", os: "Linux/Embedded", latency_ms: 1 },
+        { ip: "192.168.1.10", hostname: "Desktop-PC", mac: "AA:BB:CC:DD:EE:FF", vendor: "Intel", os: "Windows 11", latency_ms: 0 },
+        { ip: "192.168.1.100", hostname: "iPhone-Mobile", mac: "11:22:33:44:55:66", vendor: "Apple", os: "iOS", latency_ms: 3 },
+      ];
+    }
+    return await invoke<ScannedHost[]>("scan_subnet_cmd", { startIp, endIp });
+  },
+
+  async getActiveConnections(): Promise<NetConnectionInfo[]> {
+    if (!isTauriEnv()) {
+      return [
+        { proto: "TCP", local_ip: "127.0.0.1", local_port: 1421, remote_ip: "0.0.0.0", remote_port: 0, remote_host: "*", state: "LISTENING", pid: 18204, process_name: "node.exe", path: "C:\\Program Files\\nodejs\\node.exe" },
+        { proto: "TCP", local_ip: "127.0.0.1", local_port: 50062, remote_ip: "127.0.0.1", remote_port: 49983, remote_host: "localhost", state: "ESTABLISHED", pid: 20124, process_name: "Antigravity.exe", path: "C:\\Users\\ck\\AppData\\Local\\Antigravity\\Antigravity.exe" },
+        { proto: "UDP", local_ip: "0.0.0.0", local_port: 5353, remote_ip: "*", remote_port: 0, remote_host: "*", state: "LISTENING", pid: 1420, process_name: "svchost.exe", path: "C:\\Windows\\System32\\svchost.exe" },
+      ];
+    }
+    return await invoke<NetConnectionInfo[]>("get_active_connections_cmd");
   }
 };
