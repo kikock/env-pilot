@@ -5,6 +5,7 @@ import { useEnvState } from "./env/hooks/useEnvState";
 import { EnvVarCard } from "./env/components/EnvVarCard";
 import { EnvEditDrawer } from "./env/components/EnvEditDrawer";
 import { SubItemModal } from "./env/components/SubItemModal";
+import { FooterBadges } from "../components/FooterBadges";
 
 export const EnvPage: React.FC = () => {
   const {
@@ -193,7 +194,7 @@ export const EnvPage: React.FC = () => {
           当前共展示 {currentList.length} 项变量 • 作用域:{" "}
           {activeScope === "System" ? "系统环境变量 (HKLM)" : "用户环境变量 (HKCU)"}
         </div>
-        <div>提示：双击或展开 Path 可查看完整长路径；系统变量需管理员权限生效</div>
+        <FooterBadges />
       </div>
 
       {/* 新增/编辑抽屉弹窗 */}

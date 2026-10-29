@@ -2,6 +2,7 @@ import React from "react";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useHostsState } from "./hosts/hooks/useHostsState";
 import { HostsProfileSidebar } from "./hosts/components/HostsProfileSidebar";
+import { FooterBadges } from "../components/FooterBadges";
 
 export const HostsPage: React.FC = () => {
   const {
@@ -133,7 +134,7 @@ export const HostsPage: React.FC = () => {
             }{" "}
             条
           </div>
-          <div>提示：每行一条，前缀 # 表示注释；右侧勾选即刻应用</div>
+          <FooterBadges />
         </div>
       </div>
 

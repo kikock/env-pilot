@@ -8,6 +8,7 @@ import { NetAdapterDetailTab } from "./net/components/NetAdapterDetailTab";
 import { NetScannerTab } from "./net/components/NetScannerTab";
 import { NetConnectionsTab } from "./net/components/NetConnectionsTab";
 import { api } from "../services/api";
+import { FooterBadges } from "../components/FooterBadges";
 
 type NetMainTab = "profiles" | "console" | "adapters" | "scanner" | "connections";
 
@@ -244,6 +245,12 @@ export const NetPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* 底部状态栏 */}
+        <div className="app-statusbar">
+          <div>本机网络与适配器配置中心 • 方案与规则即时生效</div>
+          <FooterBadges />
+        </div>
       </div>
 
       {/* 新建方案模态弹窗 */}

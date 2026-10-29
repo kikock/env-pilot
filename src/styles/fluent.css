@@ -206,51 +206,7 @@ body {
   flex: 1;
 }
 
-/* 左侧导航栏底部作者与仓库快捷跳转 */
-.nav-footer {
-  margin-top: 8px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.nav-link-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 6px 4px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.15s cubic-bezier(0.1, 0.9, 0.2, 1.0);
-}
-
-.nav-link-btn:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-main);
-  border-color: var(--border-accent);
-  box-shadow: 0 2px 8px var(--accent-glow);
-  transform: translateY(-1px);
-}
-
-.nav-link-btn svg {
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
-}
-
-.nav-link-btn:hover svg {
-  transform: scale(1.1);
-}
+/* 退出按钮悬浮动效 */
 
 .fluent-btn-exit:hover {
   background: rgba(216, 59, 1, 0.2) !important;
@@ -527,6 +483,78 @@ body {
   padding: 0 16px;
   font-size: 11px;
   color: var(--text-muted);
+}
+
+/* 页面右下角三色徽标组件 (Shields.io 风格胶囊徽标) */
+.footer-badges-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  user-select: none;
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: stretch;
+  height: 19px;
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 11px;
+  line-height: 19px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: all 0.15s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+.badge-clickable {
+  cursor: pointer;
+}
+
+.badge-clickable:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.badge-clickable:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+.badge-side {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.badge-side-dark {
+  background: #383a42;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.badge-git-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 5px;
+  padding-right: 6px;
+}
+
+.badge-side-blue {
+  background: #1877f2;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0 7px;
+}
+
+.badge-side-green {
+  background: #238636;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0 8px;
 }
 
 /* 模态弹窗体系 (全面美化升级) */

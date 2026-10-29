@@ -11,6 +11,7 @@ import {
   ThemeMode,
 } from "../services/theme";
 import { SnapshotHistoryCard } from "./settings/SnapshotHistoryCard";
+import { FooterBadges } from "../components/FooterBadges";
 
 export const SettingsPage: React.FC = () => {
   const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([]);
@@ -101,8 +102,9 @@ export const SettingsPage: React.FC = () => {
   }, [activeModule]);
 
   return (
-    <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto", height: "100%" }}>
-      {msg && (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+      <div style={{ flex: 1, padding: "20px", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto" }}>
+        {msg && (
         <div
           style={{
             padding: "10px 16px",
@@ -362,6 +364,14 @@ export const SettingsPage: React.FC = () => {
           <div>• Hosts 存储：系统路径位于 <code>%SystemRoot%\System32\drivers\etc\hosts</code>，采用临时文件 + <code>ReplaceFileW</code> 保证原子性写入，杜绝断电半截文件</div>
           <div>• 网络适配器：通过 Win32 <code>GetAdaptersAddresses</code> 探查实时状态，并通过系统 <code>netsh</code> 工具按接口下发配置</div>
         </div>
+      </div>
+
+      </div>
+
+      {/* 底部状态栏 */}
+      <div className="app-statusbar">
+        <div>安全快照与系统偏好设置 • 配置实时自动持久化</div>
+        <FooterBadges />
       </div>
 
       {confirmDialog && (
