@@ -11,7 +11,6 @@ import {
   ThemeMode,
 } from "../services/theme";
 import { SnapshotHistoryCard } from "./settings/SnapshotHistoryCard";
-import { FooterBadges } from "../components/FooterBadges";
 
 export const SettingsPage: React.FC = () => {
   const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([]);
@@ -371,7 +370,6 @@ export const SettingsPage: React.FC = () => {
       {/* 底部状态栏 */}
       <div className="app-statusbar">
         <div>安全快照与系统偏好设置 • 配置实时自动持久化</div>
-        <FooterBadges />
       </div>
 
       {confirmDialog && (

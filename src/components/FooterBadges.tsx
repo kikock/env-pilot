@@ -46,8 +46,8 @@ export const FooterBadges: React.FC<FooterBadgesProps> = ({
       >
         <span className="badge-side badge-side-dark badge-git-label">
           <svg
-            width="11"
-            height="11"
+            width="10"
+            height="10"
             viewBox="0 0 24 24"
             fill="none"
             style={{ flexShrink: 0, transform: "rotate(45deg)" }}

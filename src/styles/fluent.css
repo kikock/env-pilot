@@ -163,14 +163,25 @@ body {
 
 /* 左侧主导航栏 */
 .app-nav {
-  width: 180px;
+  width: 200px;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  padding: 12px 8px;
+  padding: 12px 6px 8px 6px;
   gap: 4px;
   backdrop-filter: blur(20px);
+}
+
+/* 导航栏底部胶囊徽章容器 (统一置于设置项下方) */
+.nav-footer {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 .nav-item {
@@ -485,25 +496,29 @@ body {
   color: var(--text-muted);
 }
 
-/* 页面右下角三色徽标组件 (Shields.io 风格胶囊徽标) */
+/* 胶囊徽标组件 (Shields.io 风格胶囊徽标 - 强制单行排布) */
 .footer-badges-container {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 3px;
   user-select: none;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .badge-pill {
   display: inline-flex;
   align-items: stretch;
-  height: 19px;
+  height: 18px;
   border-radius: 4px;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 11px;
-  line-height: 19px;
+  font-size: 10.5px;
+  line-height: 18px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   transition: all 0.15s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+  flex-shrink: 0;
 }
 
 .badge-clickable {
@@ -525,7 +540,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 6px;
+  padding: 0 4px;
   white-space: nowrap;
 }
 
@@ -533,28 +548,29 @@ body {
   background: #383a42;
   color: #d1d5db;
   font-weight: 500;
+  padding: 0 3px;
 }
 
 .badge-git-label {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding-left: 5px;
-  padding-right: 6px;
+  gap: 3px;
+  padding-left: 3px;
+  padding-right: 4px;
 }
 
 .badge-side-blue {
   background: #1877f2;
   color: #ffffff;
   font-weight: 700;
-  padding: 0 7px;
+  padding: 0 4px;
 }
 
 .badge-side-green {
   background: #238636;
   color: #ffffff;
   font-weight: 700;
-  padding: 0 8px;
+  padding: 0 4px;
 }
 
 /* 模态弹窗体系 (全面美化升级) */

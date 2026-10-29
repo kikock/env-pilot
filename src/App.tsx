@@ -8,6 +8,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { applyThemeConfig, getThemeConfig, saveThemeConfig, ThemeConfig, ThemeMode } from "./services/theme";
 import { CloseActionModal } from "./components/CloseActionModal";
+import { FooterBadges } from "./components/FooterBadges";
 import "./styles/fluent.css";
 
 export default function App() {
@@ -162,6 +163,11 @@ export default function App() {
               </svg>
             </span>
             <span>设置</span>
+          </div>
+
+          {/* 统一全局胶囊徽标：置于侧边栏设置项下方 */}
+          <div className="nav-footer">
+            <FooterBadges />
           </div>
         </nav>
 
