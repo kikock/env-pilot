@@ -1,5 +1,5 @@
 import React from "react";
-import { api, SystemStatus } from "../services/api";
+import { SystemStatus } from "../services/api";
 
 interface HeaderProps {
   status: SystemStatus | null;
@@ -49,24 +49,54 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      <div className="titlebar-actions">
+      <div className="titlebar-actions" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <button
-          className="fluent-btn"
-          style={{ padding: "4px 8px", fontSize: "12px" }}
-          onClick={() => api.hideToTray()}
-          title="缩小至系统托盘常驻（不在任务栏占位）"
-        >
-          📥 缩小至托盘
-        </button>
-        <button
-          className="fluent-btn"
-          style={{ padding: "4px 8px", fontSize: "12px" }}
+          className="fluent-icon-btn"
           onClick={onToggleTheme}
-          title="切换深色/浅色主题"
+          title={theme === "dark" ? "切换至浅色模式" : "切换至深色模式"}
+          aria-label="切换主题"
+          style={{ width: "32px", height: "32px" }}
         >
-          {theme === "dark" ? "☀ 浅色模式" : "🌙 深色模式"}
+          {theme === "dark" ? (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ color: "#ffb900" }}
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ color: "#0078d4" }}
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
         </button>
       </div>
     </div>
   );
 };
+

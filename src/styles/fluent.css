@@ -759,3 +759,42 @@ body {
 .fluent-switch input:checked + .switch-slider:before {
   transform: translateX(20px);
 }
+
+/* Fluent 纯图标按钮规范 */
+.fluent-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+.fluent-icon-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-subtle);
+  color: var(--accent-primary);
+}
+
+.fluent-icon-btn:active {
+  transform: scale(0.94);
+}
+
+/* 模态框进场动效 */
+@keyframes fluentModalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
