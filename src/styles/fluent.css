@@ -206,6 +206,58 @@ body {
   flex: 1;
 }
 
+/* 左侧导航栏底部作者与仓库快捷跳转 */
+.nav-footer {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.nav-link-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+.nav-link-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+  border-color: var(--border-accent);
+  box-shadow: 0 2px 8px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.nav-link-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.nav-link-btn:hover svg {
+  transform: scale(1.1);
+}
+
+.fluent-btn-exit:hover {
+  background: rgba(216, 59, 1, 0.2) !important;
+  border-color: var(--color-danger) !important;
+  color: #fff !important;
+}
+
 /* 右侧页面主视区 */
 .app-main {
   flex: 1;

@@ -399,4 +399,17 @@ export const api = {
   setCloseAction(action: "ask" | "tray" | "quit"): void {
     localStorage.setItem("envpilot_close_action", action);
   },
+
+  // 打开外部默认浏览器
+  async openBrowser(url: string): Promise<void> {
+    if (!isTauriEnv()) {
+      window.open(url, "_blank");
+      return;
+    }
+    try {
+      await invoke("open_browser_cmd", { url });
+    } catch {
+      window.open(url, "_blank");
+    }
+  },
 };

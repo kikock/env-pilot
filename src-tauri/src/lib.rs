@@ -16,6 +16,7 @@ use net::adapter::list_adapters;
 use net::executor::{activate_net_profile, load_net_profiles, save_net_profiles};
 use net::model::{AdapterInfo, NetProfile};
 use serde::{Deserialize, Serialize};
+use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SystemStatus {
@@ -175,8 +176,32 @@ fn exit_app_cmd(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+#[tauri::command]
+fn open_browser_cmd(url: String) -> Result<(), AppError> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &url])
+            .spawn()
+            .map_err(|e| {
+                AppError::new(
+                    common::error::ErrorCode::CommandFailed,
+                    format!("唤起系统默认浏览器失败: {}", e),
+                )
+            })?;
+    }
+    Ok(())
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.show();
+                let _ = win.unminimize();
+                let _ = win.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let _ = tray::setup_tray(app);
@@ -220,6 +245,7 @@ pub fn run() {
             get_active_connections_cmd,
             hide_to_tray_cmd,
             exit_app_cmd,
+            open_browser_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

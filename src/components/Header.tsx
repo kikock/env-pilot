@@ -1,4 +1,5 @@
 import React from "react";
+import logoImg from "../assets/logo.png";
 import { SystemStatus } from "../services/api";
 
 interface HeaderProps {
@@ -17,9 +18,19 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <div className="app-titlebar">
       <div className="titlebar-left">
-        <div className="app-brand">
-          <span style={{ fontSize: "16px" }}>🧭</span>
-          <span>EnvPilot</span>
+        <div className="app-brand" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <img
+            src={logoImg}
+            alt="EnvPilot Logo"
+            style={{
+              width: "22px",
+              height: "22px",
+              borderRadius: "5px",
+              boxShadow: "0 2px 6px var(--accent-glow)",
+              objectFit: "contain",
+            }}
+          />
+          <span style={{ fontWeight: 600 }}>EnvPilot</span>
           <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "normal" }}>
             系统环境配置中心
           </span>

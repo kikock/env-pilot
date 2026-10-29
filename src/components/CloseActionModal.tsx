@@ -85,14 +85,15 @@ export const CloseActionModal: React.FC<CloseActionModalProps> = ({
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.2"
+              strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M12 3v10" />
-              <polyline points="8 9 12 13 16 9" />
-              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-              <path d="M4 15h4l2 3h4l2-3h4" />
+              <rect x="2" y="3" width="20" height="13" rx="2.5" />
+              <path d="M12 8v5" />
+              <path d="m9 11 3 3 3-3" />
+              <line x1="7" y1="20" x2="17" y2="20" />
+              <line x1="12" y1="16" x2="12" y2="20" />
             </svg>
           </div>
           <div>
@@ -127,7 +128,7 @@ export const CloseActionModal: React.FC<CloseActionModalProps> = ({
             onChange={(e) => setRemember(e.target.checked)}
             style={{ accentColor: "var(--accent-primary)", cursor: "pointer", width: 14, height: 14 }}
           />
-          <span>记住我的选择，下次不再提示（可在「设置与快照」中修改）</span>
+          <span>记住我的选择，下次不再提示（可在「设置」中修改）</span>
         </label>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
@@ -135,23 +136,49 @@ export const CloseActionModal: React.FC<CloseActionModalProps> = ({
             className="fluent-btn"
             onClick={onCancel}
             style={{
-              padding: "7px 14px",
+              padding: "7px 15px",
               fontSize: 12.5,
               borderRadius: 6,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              border: "1px solid var(--border-subtle)",
+              background: "var(--bg-card)",
+              color: "var(--text-main)",
             }}
           >
-            取消
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            <span>取消</span>
           </button>
           <button
-            className="fluent-btn"
+            className="fluent-btn fluent-btn-exit"
             onClick={() => onExitApp(remember)}
             style={{
-              padding: "7px 14px",
+              padding: "7px 15px",
               fontSize: 12.5,
               borderRadius: 6,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
               color: "var(--color-danger)",
-              borderColor: "rgba(216, 59, 1, 0.3)",
-              background: "rgba(216, 59, 1, 0.08)",
+              border: "1px solid rgba(216, 59, 1, 0.35)",
+              background: "var(--color-danger-bg)",
+              outline: "none",
+              transition: "all 0.15s ease",
             }}
           >
             <svg
@@ -167,7 +194,7 @@ export const CloseActionModal: React.FC<CloseActionModalProps> = ({
               <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
               <line x1="12" y1="2" x2="12" y2="12" />
             </svg>
-            彻底退出
+            <span>彻底退出</span>
           </button>
           <button
             className="fluent-btn fluent-btn-primary"
@@ -176,7 +203,12 @@ export const CloseActionModal: React.FC<CloseActionModalProps> = ({
               padding: "7px 16px",
               fontSize: 12.5,
               borderRadius: 6,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
               boxShadow: "0 4px 12px var(--accent-glow)",
+              transition: "all 0.15s ease",
             }}
           >
             <svg
@@ -189,12 +221,12 @@ export const CloseActionModal: React.FC<CloseActionModalProps> = ({
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M12 3v10" />
-              <polyline points="8 9 12 13 16 9" />
-              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-              <path d="M4 15h4l2 3h4l2-3h4" />
+              <rect x="3" y="3" width="18" height="13" rx="2.5" />
+              <path d="M12 7v5" />
+              <path d="m9.5 10 2.5 2.5 2.5-2.5" />
+              <line x1="7" y1="19" x2="17" y2="19" />
             </svg>
-            缩小到托盘
+            <span>缩小到托盘</span>
           </button>
         </div>
       </div>
