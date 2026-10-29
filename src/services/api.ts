@@ -360,4 +360,43 @@ export const api = {
       if (unlisten) unlisten();
     };
   },
+
+  // 隐藏窗口到托盘
+  async hideToTray(): Promise<void> {
+    if (!isTauriEnv()) return;
+    return await invoke("hide_to_tray_cmd");
+  },
+
+  // 彻底退出应用
+  async exitApp(): Promise<void> {
+    if (!isTauriEnv()) return;
+    return await invoke("exit_app_cmd");
+  },
+
+  // 监听关闭请求
+  onCloseRequested(callback: () => void): () => void {
+    if (!isTauriEnv()) return () => {};
+    let unlisten: (() => void) | null = null;
+    listen("window-close-requested", () => {
+      callback();
+    }).then((fn) => {
+      unlisten = fn;
+    }).catch(console.error);
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  },
+
+  // 获取关闭窗口行为配置
+  getCloseAction(): "ask" | "tray" | "quit" {
+    const val = localStorage.getItem("envpilot_close_action");
+    if (val === "tray" || val === "quit") return val;
+    return "ask";
+  },
+
+  // 保存关闭窗口行为配置
+  setCloseAction(action: "ask" | "tray" | "quit"): void {
+    localStorage.setItem("envpilot_close_action", action);
+  },
 };

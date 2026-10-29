@@ -7,12 +7,14 @@ import { NetPage } from "./pages/NetPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { applyThemeConfig, getThemeConfig, saveThemeConfig, ThemeConfig, ThemeMode } from "./services/theme";
+import { CloseActionModal } from "./components/CloseActionModal";
 import "./styles/fluent.css";
 
 export default function App() {
   const [activePage, setActivePage] = useState<"env" | "hosts" | "net" | "settings">("env");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [globalNotice, setGlobalNotice] = useState<{
     title: string;
     message: string;
@@ -41,8 +43,21 @@ export default function App() {
       setActivePage(page);
     });
 
+    // 监听窗口关闭按钮请求事件
+    const unlistenClose = api.onCloseRequested(() => {
+      const action = api.getCloseAction();
+      if (action === "tray") {
+        api.hideToTray();
+      } else if (action === "quit") {
+        api.exitApp();
+      } else {
+        setIsCloseModalOpen(true);
+      }
+    });
+
     return () => {
       unlistenNavigate();
+      unlistenClose();
     };
   }, []);
 
@@ -143,6 +158,22 @@ export default function App() {
           onCancel={() => setGlobalNotice(null)}
         />
       )}
+
+      {/* 关闭窗口提示模态框 */}
+      <CloseActionModal
+        isOpen={isCloseModalOpen}
+        onCancel={() => setIsCloseModalOpen(false)}
+        onHideToTray={(remember) => {
+          setIsCloseModalOpen(false);
+          if (remember) api.setCloseAction("tray");
+          api.hideToTray();
+        }}
+        onExitApp={(remember) => {
+          setIsCloseModalOpen(false);
+          if (remember) api.setCloseAction("quit");
+          api.exitApp();
+        }}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ export const SettingsPage: React.FC = () => {
   const [activeModule, setActiveModule] = useState<"env" | "hosts" | "net">("env");
   const [loading, setLoading] = useState(false);
   const [themeCfg, setThemeCfg] = useState<ThemeConfig>(getThemeConfig());
+  const [closeAction, setCloseAction] = useState<"ask" | "tray" | "quit">(api.getCloseAction());
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -284,6 +285,60 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* 窗口与系统托盘行为 */}
+      <div className="env-var-card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ fontWeight: 600, fontSize: "14px" }}>
+          🗔 窗口控制与系统托盘行为
+        </div>
+        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+          点击右上角关闭按钮时的默认操作模式：
+        </div>
+        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "13px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+            <input
+              type="radio"
+              name="closeAction"
+              value="ask"
+              checked={closeAction === "ask"}
+              onChange={() => {
+                setCloseAction("ask");
+                api.setCloseAction("ask");
+              }}
+            />
+            <span>每次询问（弹窗提示）</span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+            <input
+              type="radio"
+              name="closeAction"
+              value="tray"
+              checked={closeAction === "tray"}
+              onChange={() => {
+                setCloseAction("tray");
+                api.setCloseAction("tray");
+              }}
+            />
+            <span>最小化到托盘（不在任务栏显示）</span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+            <input
+              type="radio"
+              name="closeAction"
+              value="quit"
+              checked={closeAction === "quit"}
+              onChange={() => {
+                setCloseAction("quit");
+                api.setCloseAction("quit");
+              }}
+            />
+            <span>直接退出程序</span>
+          </label>
+        </div>
+        <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+          * 点击窗口最小化按钮（_）时，窗口将直接缩小至系统托盘，不再占用任务栏空间。
         </div>
       </div>
 

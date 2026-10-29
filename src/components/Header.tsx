@@ -1,5 +1,5 @@
 import React from "react";
-import { SystemStatus } from "../services/api";
+import { api, SystemStatus } from "../services/api";
 
 interface HeaderProps {
   status: SystemStatus | null;
@@ -50,6 +50,14 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="titlebar-actions">
+        <button
+          className="fluent-btn"
+          style={{ padding: "4px 8px", fontSize: "12px" }}
+          onClick={() => api.hideToTray()}
+          title="缩小至系统托盘常驻（不在任务栏占位）"
+        >
+          📥 缩小至托盘
+        </button>
         <button
           className="fluent-btn"
           style={{ padding: "4px 8px", fontSize: "12px" }}

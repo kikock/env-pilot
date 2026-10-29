@@ -165,12 +165,37 @@ fn get_active_connections_cmd() -> Result<Vec<net::tools::NetConnectionInfo>, Ap
     net::tools::get_active_connections()
 }
 
+#[tauri::command]
+fn hide_to_tray_cmd(window: tauri::WebviewWindow) {
+    let _ = window.hide();
+}
+
+#[tauri::command]
+fn exit_app_cmd(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let _ = tray::setup_tray(app);
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            use tauri::Emitter;
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    api.prevent_close();
+                    let _ = window.emit("window-close-requested", ());
+                }
+                tauri::WindowEvent::Resized(_) => {
+                    if window.is_minimized().unwrap_or(false) {
+                        let _ = window.hide();
+                    }
+                }
+                _ => {}
+            }
         })
         .invoke_handler(tauri::generate_handler![
             get_system_status_cmd,
@@ -193,6 +218,8 @@ pub fn run() {
             stop_net_tool_stream_cmd,
             scan_subnet_cmd,
             get_active_connections_cmd,
+            hide_to_tray_cmd,
+            exit_app_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
