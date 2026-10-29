@@ -35,6 +35,15 @@ export default function App() {
     if (resume === "hosts" || resume === "net" || resume === "settings") {
       setActivePage(resume);
     }
+
+    // 监听来自系统托盘等通道的直达页面导航
+    const unlistenNavigate = api.onNavigate((page) => {
+      setActivePage(page);
+    });
+
+    return () => {
+      unlistenNavigate();
+    };
   }, []);
 
   const toggleTheme = () => {

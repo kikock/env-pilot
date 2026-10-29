@@ -9,6 +9,8 @@
     "start": "tauri dev",
     "check:standards": "node ./scripts/check-standards.cjs",
     "build": "npm run check:standards && tsc && vite build",
+    "build:app": "npm run build && tauri build",
+    "build:offline": "npm run build && tauri build --config ./src-tauri/tauri.offline.conf.json",
     "preview": "vite preview",
     "tauri": "tauri"
   },

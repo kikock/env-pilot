@@ -341,5 +341,23 @@ export const api = {
       ];
     }
     return await invoke<NetConnectionInfo[]>("get_active_connections_cmd");
-  }
+  },
+
+  // 监听来自系统托盘等通道的页面直达导航事件
+  onNavigate(callback: (page: "env" | "hosts" | "net" | "settings") => void): () => void {
+    if (!isTauriEnv()) return () => {};
+    let unlisten: (() => void) | null = null;
+    listen<string>("navigate", (event) => {
+      const page = event.payload;
+      if (page === "env" || page === "hosts" || page === "net" || page === "settings") {
+        callback(page);
+      }
+    }).then((fn) => {
+      unlisten = fn;
+    }).catch(console.error);
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  },
 };
